@@ -26,12 +26,6 @@ func UploadFlowers(c echo.Context) error {
 
 	for i := 0; i < len(flowers); i++ {
 		flower := flowers[i]
-		totQty, err := strconv.Atoi(flower.TotQty)
-		if err != nil {
-			log.Fatalf(err.Error())
-			msg := err.Error() + " => data:" + fmt.Sprint(flower)
-			errLogs = append(errLogs, msg)
-		}
 
 		saleDate, err := time.Parse("2006-01-02", flower.SaleDate)
 		if err != nil {
@@ -43,11 +37,11 @@ func UploadFlowers(c echo.Context) error {
 			FlowerType: flower.PumName,
 			FlowerName: flower.GoodName,
 			Grade:      flower.LvNm,
-			Quantity:   totQty,
-			MaxPrice:   flower.MaxAmt,
-			MinPrice:   flower.MinAmt,
-			AvgPrice:   flower.AvgAmt,
-			TotalPrice: flower.TotAmt,
+			Quantity:   strToInt(flower.TotQty, flower, &errLogs),
+			MaxPrice:   strToInt(flower.MaxAmt, flower, &errLogs),
+			MinPrice:   strToInt(flower.MinAmt, flower, &errLogs),
+			AvgPrice:   strToInt(flower.AvgAmt, flower, &errLogs),
+			TotalPrice: strToInt(flower.TotAmt, flower, &errLogs),
 			BidDate:    saleDate,
 		}
 		dataList = append(dataList, data)
@@ -64,4 +58,14 @@ func UploadFlowers(c echo.Context) error {
 	}
 
 	return c.JSONPretty(http.StatusOK, result, "  ")
+}
+
+func strToInt(from string, flower models.FlowerItem, errLogs *[]string) int {
+	target, err := strconv.Atoi(from)
+	if err != nil {
+		log.Fatalf(err.Error())
+		msg := err.Error() + " => data:" + fmt.Sprint(flower)
+		*errLogs = append(*errLogs, msg)
+	}
+	return target
 }

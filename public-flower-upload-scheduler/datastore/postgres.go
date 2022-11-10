@@ -3,6 +3,7 @@ package datastore
 import (
 	"log"
 	"public-flower-upload-scheduler/config"
+	"public-flower-upload-scheduler/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,9 +22,10 @@ func NewPostgresql() *gorm.DB {
 
 	if err != nil {
 		log.Fatal(err)
+		panic(err)
 	}
 
-	db.AutoMigrate()
+	db.AutoMigrate(&models.PublicBiddingFlower{})
 
 	return db
 }

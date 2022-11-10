@@ -20,7 +20,7 @@ const (
 )
 
 func FetchFlowerItems() ([]models.FlowerItem, error) {
-	// url := GenerateUrl("2022-11-09")
+	// url := GenerateUrl("2022-11-09") // test
 	url := GenerateUrl()
 	fmt.Println(url)
 
@@ -45,7 +45,6 @@ func FetchFlowerItems() ([]models.FlowerItem, error) {
 
 // ref : https://flower.at.or.kr/api/apiOpenInfo.do
 func GenerateUrl(baseDate ...string) string {
-	config.ReadConfig()
 	apiKey := config.C.Api.Key
 
 	now := time.Now()
