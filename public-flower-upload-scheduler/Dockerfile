@@ -1,13 +1,15 @@
 FROM public.ecr.aws/lambda/provided:al2 as build
 LABEL Terry Kim <terry960302@gmail.com>
 
+ARG DIR=public-flower-upload-scheduler
+
 RUN yum install -y golang
 RUN go env -w GOPROXY=direct
 
-ADD go.mod go.sum ./
+ADD ${DIR}/go.mod ${DIR}/go.sum ./
 RUN go mod download
 
-ADD . .
+ADD ${DIR}/ .
 RUN env GOOS=linux GOARCH=amd64 go build -o /main
 
 FROM public.ecr.aws/lambda/provided:al2
