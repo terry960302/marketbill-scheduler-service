@@ -22,9 +22,9 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	r := models.NewLambdaResponse()
 	switch request.HTTPMethod {
 	case "GET":
-		return handlers.HealthCheck(request)
+		return handlers.HealthCheck(r, request)
 	case "POST":
-		return handlers.HandleUpload(request)
+		return handlers.HandleUpload(r, request)
 	default:
 		return r.Error(http.StatusBadRequest, "Wrong http method")
 	}

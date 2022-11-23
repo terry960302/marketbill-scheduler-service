@@ -12,8 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func HandleUpload(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	r := models.NewLambdaResponse()
+func HandleUpload(r *models.LambdaResponse, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	db := datastore.NewPostgresql()
 	var errLog models.FlowerUploadLogs
 
