@@ -1,6 +1,6 @@
 package models
 
-type ApiResponse struct {
+type PublicApiResponse struct {
 	Response Response
 }
 

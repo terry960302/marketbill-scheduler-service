@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/aws/aws-lambda-go v1.35.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

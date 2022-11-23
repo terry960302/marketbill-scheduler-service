@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"public-flower-upload-scheduler/config"
+	"os"
 	"public-flower-upload-scheduler/models"
 	"strconv"
 	"time"
@@ -31,7 +31,7 @@ func FetchFlowerItems() ([]models.FlowerItem, error) {
 
 	defer resp.Body.Close()
 
-	var apiResp models.ApiResponse
+	var apiResp models.PublicApiResponse
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -43,9 +43,8 @@ func FetchFlowerItems() ([]models.FlowerItem, error) {
 	return apiResp.Response.Items, nil
 }
 
-// ref : https://flower.at.or.kr/api/apiOpenInfo.do
 func GenerateUrl(baseDate ...string) string {
-	apiKey := config.C.Api.Key
+	apiKey := os.Getenv("API_KEY")
 
 	now := time.Now()
 	var _baseDate string = ""

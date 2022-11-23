@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type PublicBiddingFlower struct {
+type PublicBiddingFlowers struct {
 	gorm.Model
 	FlowerType string    `json:"flower_type"`
 	FlowerName string    `json:"flower_name"`

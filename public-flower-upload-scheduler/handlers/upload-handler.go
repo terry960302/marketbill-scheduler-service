@@ -1,71 +1,65 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"public-flower-upload-scheduler/datastore"
 	"public-flower-upload-scheduler/models"
 	"public-flower-upload-scheduler/services"
-	"strconv"
-	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/aws/aws-lambda-go/events"
+	"gorm.io/gorm"
 )
 
-func UploadFlowers(c echo.Context) error {
-	var errLogs []string = []string{}
-
+func HandleUpload(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	r := models.NewLambdaResponse()
 	db := datastore.NewPostgresql()
-	flowers, err := services.FetchFlowerItems()
+	var errLog models.FlowerUploadLogs
+
+	defer func() {
+		if err := recover(); err != nil {
+			errLog = models.FlowerUploadLogs{
+				Success: -1,
+				Failure: -1,
+				Total:   -1,
+				ErrLogs: fmt.Sprint(err),
+			}
+		}
+	}()
+
+	log, err := UploadFlowers(db, request)
 	if err != nil {
-		c.Logger().Error(err)
-	}
-
-	var dataList []models.PublicBiddingFlower = []models.PublicBiddingFlower{}
-
-	for i := 0; i < len(flowers); i++ {
-		flower := flowers[i]
-
-		saleDate, err := time.Parse("2006-01-02", flower.SaleDate)
-		if err != nil {
-			log.Fatalf(err.Error())
-			msg := err.Error() + " => data:" + fmt.Sprint(flower)
-			errLogs = append(errLogs, msg)
+		errLog = models.FlowerUploadLogs{
+			Success: -1,
+			Failure: -1,
+			Total:   -1,
+			ErrLogs: err.Error(),
 		}
-		data := models.PublicBiddingFlower{
-			FlowerType: flower.PumName,
-			FlowerName: flower.GoodName,
-			Grade:      flower.LvNm,
-			Quantity:   strToInt(flower.TotQty, flower, &errLogs),
-			MaxPrice:   strToInt(flower.MaxAmt, flower, &errLogs),
-			MinPrice:   strToInt(flower.MinAmt, flower, &errLogs),
-			AvgPrice:   strToInt(flower.AvgAmt, flower, &errLogs),
-			TotalPrice: strToInt(flower.TotAmt, flower, &errLogs),
-			BidDate:    saleDate,
-		}
-		dataList = append(dataList, data)
+		bytes, _ := json.Marshal(errLog)
+		db.Create(errLog)
+		return r.Error(http.StatusInternalServerError, string(bytes))
 	}
 
-	batchSize := len(dataList)
-
-	db.CreateInBatches(dataList, batchSize)
-
-	result := map[string]interface{}{
-		"success": batchSize - len(errLogs),
-		"failure": len(errLogs),
-		"errors":  errLogs,
-	}
-
-	return c.JSONPretty(http.StatusOK, result, "  ")
+	return r.Json(http.StatusOK, log)
 }
 
-func strToInt(from string, flower models.FlowerItem, errLogs *[]string) int {
-	target, err := strconv.Atoi(from)
+func UploadFlowers(db *gorm.DB, request events.APIGatewayProxyRequest) (*models.FlowerUploadLogs, error) {
+
+	flowers, err := services.FetchFlowerItems()
 	if err != nil {
-		log.Fatalf(err.Error())
-		msg := err.Error() + " => data:" + fmt.Sprint(flower)
-		*errLogs = append(*errLogs, msg)
+		return nil, err
 	}
-	return target
+
+	log, err := services.UploadRawFlowerData(db, flowers)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := db.Create(log)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return log, nil
 }

@@ -2,7 +2,7 @@ package datastore
 
 import (
 	"log"
-	"public-flower-upload-scheduler/config"
+	"os"
 	"public-flower-upload-scheduler/models"
 
 	"gorm.io/driver/postgres"
@@ -10,11 +10,11 @@ import (
 )
 
 func NewPostgresql() *gorm.DB {
-	DSN := "host=" + config.C.Database.Host +
-		" user=" + config.C.Database.User +
-		" password=" + config.C.Database.Password +
-		" port=" + config.C.Database.Port +
-		" database=" + config.C.Database.DBName +
+	DSN := "host=" + os.Getenv("DB_HOST") +
+		" user=" + os.Getenv("DB_USER") +
+		" password=" + os.Getenv("DB_PW") +
+		" port=" + os.Getenv("DB_PORT") +
+		" database=" + os.Getenv("DB_NAME") +
 		" sslmode=disable" +
 		" TimeZone=Asia/Seoul"
 
@@ -25,7 +25,7 @@ func NewPostgresql() *gorm.DB {
 		panic(err)
 	}
 
-	db.AutoMigrate(&models.PublicBiddingFlower{})
+	db.AutoMigrate(&models.PublicBiddingFlowers{}, &models.FlowerUploadLogs{})
 
 	return db
 }
