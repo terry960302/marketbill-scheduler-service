@@ -7,5 +7,5 @@ type FlowerUploadLogs struct {
 	Success int    `json:"success"`
 	Failure int    `json:"failure"`
 	Total   int    `json:"total"`
-	ErrLogs string `gorm:"type:text"`
+	ErrLogs string `gorm:"type:text" json:"err_logs"`
 }
