@@ -20,6 +20,7 @@ func init() {
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	r := models.NewLambdaResponse()
+	log.Printf("[LOG] method : %s", request.HTTPMethod)
 	switch request.HTTPMethod {
 	case "GET":
 		return handlers.HealthCheck(r, request)
