@@ -20,7 +20,7 @@ ENV DB_USER=marketbill
 ENV DB_PW=marketbill1234!
 ENV DB_NET=tcp
 ENV DB_HOST=marketbill-db.ciegftzvpg1l.ap-northeast-2.rds.amazonaws.com
-ENV PORT=5432
+ENV DB_PORT=5432
 ENV DB_NAME=prod-db
 
 ENV PORT=8080

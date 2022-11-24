@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"public-flower-upload-scheduler/models"
@@ -14,7 +15,7 @@ func NewPostgresql() (*gorm.DB, error) {
 		" user=" + os.Getenv("DB_USER") +
 		" password=" + os.Getenv("DB_PW") +
 		" port=" + os.Getenv("DB_PORT") +
-		" database=" + os.Getenv("DB_NAME") +
+		" database=" + fmt.Sprint(os.Getenv("DB_NAME")) +
 		" sslmode=disable" +
 		" TimeZone=Asia/Seoul"
 
