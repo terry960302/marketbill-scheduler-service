@@ -13,7 +13,12 @@ import (
 )
 
 func HandleUpload(r *models.LambdaResponse, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	db := datastore.NewPostgresql()
+	db, err := datastore.NewPostgresql()
+	if err != nil {
+		e := fmt.Sprintf("[NewPostgresql] %s", err.Error())
+		return r.Error(http.StatusInternalServerError, e)
+
+	}
 	var errLog models.FlowerUploadLogs
 
 	defer func() {

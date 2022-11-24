@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewPostgresql() *gorm.DB {
+func NewPostgresql() (*gorm.DB, error) {
 	DSN := "host=" + os.Getenv("DB_HOST") +
 		" user=" + os.Getenv("DB_USER") +
 		" password=" + os.Getenv("DB_PW") +
@@ -21,11 +21,11 @@ func NewPostgresql() *gorm.DB {
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal(err)
-		panic(err)
+		log.Print(err)
+		return nil, err
 	}
 
 	db.AutoMigrate(&models.PublicBiddingFlowers{}, &models.FlowerUploadLogs{})
 
-	return db
+	return db, nil
 }
