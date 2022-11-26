@@ -19,22 +19,10 @@ func HandleUpload(r *models.LambdaResponse, request events.APIGatewayProxyReques
 		return r.Error(http.StatusInternalServerError, e)
 
 	}
-	var errLog models.FlowerUploadLogs
-
-	defer func() {
-		if err := recover(); err != nil {
-			errLog = models.FlowerUploadLogs{
-				Success: -1,
-				Failure: -1,
-				Total:   -1,
-				ErrLogs: fmt.Sprint(err),
-			}
-		}
-	}()
 
 	log, err := UploadFlowers(db, request)
 	if err != nil {
-		errLog = models.FlowerUploadLogs{
+		errLog := models.FlowerBatchUploadLogs{
 			Success: -1,
 			Failure: -1,
 			Total:   -1,
@@ -48,7 +36,7 @@ func HandleUpload(r *models.LambdaResponse, request events.APIGatewayProxyReques
 	return r.Json(http.StatusOK, log)
 }
 
-func UploadFlowers(db *gorm.DB, request events.APIGatewayProxyRequest) (*models.FlowerUploadLogs, error) {
+func UploadFlowers(db *gorm.DB, request events.APIGatewayProxyRequest) (*models.FlowerBatchUploadLogs, error) {
 
 	flowers, err := services.FetchFlowerItems()
 	if err != nil {

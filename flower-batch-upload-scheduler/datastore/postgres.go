@@ -26,7 +26,7 @@ func NewPostgresql() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&models.PublicBiddingFlowers{}, &models.FlowerUploadLogs{})
+	db.AutoMigrate(&models.PublicBiddingFlowers{}, &models.FlowerBatchUploadLogs{})
 
 	return db, nil
 }

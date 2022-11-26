@@ -20,7 +20,6 @@ const (
 )
 
 func FetchFlowerItems() ([]models.FlowerItem, error) {
-	// url := GenerateUrl("2022-11-09") // test
 	url := GenerateUrl()
 	fmt.Println(url)
 

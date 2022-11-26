@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*models.FlowerUploadLogs, error) {
+func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*models.FlowerBatchUploadLogs, error) {
 
 	var errLogs []string = []string{}
 	var dataList []models.PublicBiddingFlowers = []models.PublicBiddingFlowers{}
@@ -46,7 +46,7 @@ func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*models.Flow
 		return nil, tx.Error
 	}
 
-	return &models.FlowerUploadLogs{
+	return &models.FlowerBatchUploadLogs{
 		Success: batchSize - len(errLogs),
 		Failure: len(errLogs),
 		Total:   batchSize,
@@ -58,7 +58,7 @@ func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*models.Flow
 func strToInt(from string, flower models.FlowerItem, errLogs *[]string) int {
 	target, err := strconv.Atoi(from)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Print(err.Error())
 		msg := err.Error() + " => data:" + fmt.Sprint(flower)
 		*errLogs = append(*errLogs, msg)
 	}
