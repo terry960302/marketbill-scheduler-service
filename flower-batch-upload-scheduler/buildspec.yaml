@@ -15,7 +15,7 @@ phases:
       - CONTAINER_NAME=upload-scheduler-service-container # ecs cluster container name on which upload source file to
       - IMAGE_TAG="$(date '+%Y%m%d%H%M%S')"
       - REPOSITORY_URI=113244157722.dkr.ecr.ap-northeast-2.amazonaws.com/marketbill-upload-scheduler-service
-      - DIR=public-flower-upload-scheduler
+      - DIR=flower-batch-upload-scheduler
 
   build:
     commands:

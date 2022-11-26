@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/provided:al2 as build
 LABEL Terry Kim <terry960302@gmail.com>
 
-ARG DIR=public-flower-upload-scheduler
+ARG DIR=flower-batch-upload-scheduler
 
 RUN yum install -y golang
 RUN go env -w GOPROXY=direct
