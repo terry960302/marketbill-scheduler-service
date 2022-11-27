@@ -53,5 +53,4 @@ func main() {
 	// db.Table("flowers").Joins("FlowerTypes").Find(&flowers)
 
 	// utils.PrettyPrint(flowers)
-
 }
