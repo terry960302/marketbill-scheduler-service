@@ -19,7 +19,7 @@ const (
 	DATA_TYPE   = "json"
 )
 
-func FetchFlowerItems() ([]models.FlowerItem, error) {
+func FetchRawFlowerItems() ([]models.FlowerItem, error) {
 	url := GenerateUrl()
 	fmt.Println(url)
 

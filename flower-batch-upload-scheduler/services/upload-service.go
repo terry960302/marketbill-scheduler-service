@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"public-flower-upload-scheduler/models"
@@ -11,7 +12,45 @@ import (
 	"gorm.io/gorm"
 )
 
-func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*models.FlowerBatchUploadLogs, error) {
+func UploadFlowers(db *gorm.DB, rawFlowers []models.FlowerItem) (*[]models.PublicBiddingFlowers, *models.FlowerBatchUploadLogs, error) {
+	defer func() {
+		var err error = nil
+		if r := recover(); r != nil {
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+
+			if err != nil {
+				log := models.FlowerBatchUploadLogs{
+					Success: -1,
+					Failure: -1,
+					Total:   -1,
+					ErrLogs: err.Error(),
+				}
+				db.Create(log)
+			}
+		}
+	}()
+
+	publicFlowers, log, err := UploadRawFlowerData(db, rawFlowers)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tx := db.Create(log)
+	if tx.Error != nil {
+		return nil, nil, tx.Error
+	}
+
+	return publicFlowers, log, nil
+}
+
+func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*[]models.PublicBiddingFlowers, *models.FlowerBatchUploadLogs, error) {
 
 	var errLogs []string = []string{}
 	var dataList []models.PublicBiddingFlowers = []models.PublicBiddingFlowers{}
@@ -43,10 +82,10 @@ func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*models.Flow
 
 	tx := db.CreateInBatches(dataList, batchSize)
 	if tx.Error != nil {
-		return nil, tx.Error
+		return nil, nil, tx.Error
 	}
 
-	return &models.FlowerBatchUploadLogs{
+	return &dataList, &models.FlowerBatchUploadLogs{
 		Success: batchSize - len(errLogs),
 		Failure: len(errLogs),
 		Total:   batchSize,

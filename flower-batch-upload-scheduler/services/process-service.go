@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"log"
 	"public-flower-upload-scheduler/models"
 	"time"
@@ -9,23 +10,63 @@ import (
 )
 
 // 공공데이터를 가공하여 새로운 꽃, 꽃품목 데이터를 업로드
-func ProcessFlowerRawData(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) error {
+func ProcessFlowerRawData(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (*models.FlowerBatchProcessLogs, error) {
+	defer func() {
+		var err error = nil
+		if r := recover(); r != nil {
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
 
-	if err := UploadNewFlowerTypes(db, publicFlowers); err != nil {
-		return err
+			if err != nil {
+				log := models.FlowerBatchProcessLogs{
+					NewFlowerCount:      -1,
+					NewFlowerTypeCount:  -1,
+					AffectedFlowerCount: -1,
+					Status:              "FAILURE",
+					ErrLogs:             err.Error(),
+				}
+				db.Create(log)
+			}
+		}
+	}()
+
+	newFlowerTypesLen, err := UploadNewFlowerTypes(db, publicFlowers)
+	if err != nil {
+		return nil, err
 	}
-	if err := UploadNewFlowers(db, publicFlowers); err != nil {
-		return err
+	newFlowersLen, err := UploadNewFlowers(db, publicFlowers)
+	if err != nil {
+		return nil, err
 	}
-	if err := UploadNewFlowerBiddingDate(db, publicFlowers); err != nil {
-		return err
+	biddingFlowersLen, err := UploadNewFlowerBiddingDate(db, publicFlowers)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	log := models.FlowerBatchProcessLogs{
+		NewFlowerTypeCount:  newFlowerTypesLen,
+		NewFlowerCount:      newFlowersLen,
+		AffectedFlowerCount: biddingFlowersLen,
+		Status:              "SUCCESS",
+		ErrLogs:             "",
+	}
+
+	tx := db.Create(log)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &log, nil
 }
 
 // 공공데이터를 기반으로 디비에 없는 새로운 꽃을 추가합니다.(꽃 품목 우선 생성 실행)
-func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) error {
+func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (int, error) {
 	var newFlowers []models.Flowers = []models.Flowers{}
 	var dbFlowers []models.Flowers
 	var dbFlowerTypes []models.FlowerTypes
@@ -35,11 +76,11 @@ func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) 
 	// 디비에서 꽃과 종류 데이터 가져오기(디비 부하를 줄이기 위해 서버에서 처리)
 	flowerTx := flowerTable.Find(&dbFlowers)
 	if flowerTx.Error != nil {
-		return flowerTx.Error
+		return -1, flowerTx.Error
 	}
 	flowerTypeTx := flowerTypeTable.Find(&dbFlowerTypes)
 	if flowerTypeTx.Error != nil {
-		return flowerTypeTx.Error
+		return -1, flowerTypeTx.Error
 	}
 
 	// 디비 데이터 contains처리를 위한
@@ -70,23 +111,23 @@ func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) 
 	// 꽃 배치 업로드
 	createTx := flowerTable.CreateInBatches(newFlowers, len(newFlowers))
 	if createTx.Error != nil {
-		return createTx.Error
+		return -1, createTx.Error
 	}
 
 	log.Printf("New Flowers Length : %d", len(newFlowers))
-	return nil
+	return len(newFlowers), nil
 
 }
 
 // 공공데이터를 기반으로 디비에 없는 새로운 꽃 품목을 추가합니다.
-func UploadNewFlowerTypes(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) error {
+func UploadNewFlowerTypes(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (int, error) {
 	var flowerTypes []models.FlowerTypes
 	var newFlowerTypes []models.FlowerTypes = []models.FlowerTypes{}
 
 	table := db.Table("flower_types")
 	flowerTypeTx := table.Find(&flowerTypes)
 	if flowerTypeTx.Error != nil {
-		return flowerTypeTx.Error
+		return -1, flowerTypeTx.Error
 	}
 
 	// 공공데이터 꽃 품목 중복 삭제
@@ -116,15 +157,15 @@ func UploadNewFlowerTypes(db *gorm.DB, publicFlowers []models.PublicBiddingFlowe
 	// 꽃 품목 배치 업로드
 	createTx := table.CreateInBatches(newFlowerTypes, len(newFlowerTypes))
 	if createTx.Error != nil {
-		return createTx.Error
+		return -1, createTx.Error
 	}
 
 	log.Printf("New Flower Types Length : %d", len(newFlowerTypes))
-	return nil
+	return len(newFlowerTypes), nil
 }
 
 // 공공데이터를 기반으로 기존 꽃데이터에 꽃 경매일자를 추가합니다.
-func UploadNewFlowerBiddingDate(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) error {
+func UploadNewFlowerBiddingDate(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (int, error) {
 	var dbFlowers []models.Flowers
 	var dbFlowerTypes []models.FlowerTypes
 	flowerTable := db.Table("flowers")
@@ -134,11 +175,11 @@ func UploadNewFlowerBiddingDate(db *gorm.DB, publicFlowers []models.PublicBiddin
 	// 디비에서 꽃과 종류 데이터 가져오기(디비 부하를 줄이기 위해 서버에서 처리)
 	flowerTx := flowerTable.Find(&dbFlowers)
 	if flowerTx.Error != nil {
-		return flowerTx.Error
+		return -1, flowerTx.Error
 	}
 	flowerTypeTx := flowerTypeTable.Find(&dbFlowerTypes)
 	if flowerTypeTx.Error != nil {
-		return flowerTypeTx.Error
+		return -1, flowerTypeTx.Error
 	}
 
 	// 디비 데이터 contains처리를 위한
@@ -169,11 +210,11 @@ func UploadNewFlowerBiddingDate(db *gorm.DB, publicFlowers []models.PublicBiddin
 	// 꽃 경매일자 배치 업로드
 	createTx := biddingFlowerTable.CreateInBatches(newBiddingFlowers, len(newBiddingFlowers))
 	if createTx.Error != nil {
-		return createTx.Error
+		return -1, createTx.Error
 	}
 
 	log.Printf("New BiddingFlowers Length : %d", len(newBiddingFlowers))
-	return nil
+	return len(newBiddingFlowers), nil
 }
 
 // 꽃 탐색용
