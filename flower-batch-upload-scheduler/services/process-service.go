@@ -57,7 +57,7 @@ func ProcessFlowerRawData(db *gorm.DB, publicFlowers []models.PublicBiddingFlowe
 		ErrLogs:             "",
 	}
 
-	tx := db.Create(log)
+	tx := db.Create(&log)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
