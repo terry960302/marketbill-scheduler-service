@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"public-flower-upload-scheduler/models"
 	"time"
@@ -83,12 +84,24 @@ func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) 
 		return -1, flowerTypeTx.Error
 	}
 
+	// 공공데이터 꽃 중복 처리(type, name 모두 검사)
+	nonDuplicateFlowersMap := map[string]int{}
+	nonDuplicateFlowers := []models.PublicBiddingFlowers{}
+	for _, pFlower := range publicFlowers {
+		namePair := fmt.Sprintf("%s(%s)", pFlower.FlowerName, pFlower.FlowerType)
+		_, exists := nonDuplicateFlowersMap[namePair]
+		if !exists {
+			nonDuplicateFlowersMap[namePair] = 1
+			nonDuplicateFlowers = append(nonDuplicateFlowers, pFlower)
+		}
+	}
+
 	// 디비 데이터 contains처리를 위한
 	dbFlowersMap := convertFlowersToMap(dbFlowers)
 	dbFlowerTypesMap := convertFlowerTypesToMap(dbFlowerTypes)
 
 	// 공공데이터에서 새로운 꽃인지 탐색
-	for _, pFlower := range publicFlowers {
+	for _, pFlower := range nonDuplicateFlowers {
 		flowerRelationMap, flowerNameExists := dbFlowersMap[pFlower.FlowerName]
 		flowerTypeID, isFlowerTypeExists := dbFlowerTypesMap[pFlower.FlowerType]
 
