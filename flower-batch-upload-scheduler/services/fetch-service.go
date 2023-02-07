@@ -9,6 +9,8 @@ import (
 	"public-flower-upload-scheduler/models"
 	"strconv"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,6 +22,9 @@ const (
 )
 
 func FetchRawFlowerItems() ([]models.FlowerItem, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	url := GenerateUrl("2022-11-30")
 	fmt.Println(url)
 
@@ -39,10 +44,15 @@ func FetchRawFlowerItems() ([]models.FlowerItem, error) {
 		return nil, err
 	}
 
+	logger.Info("completed")
+
 	return apiResp.Response.Items, nil
 }
 
 func GenerateUrl(baseDate ...string) string {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	apiKey := os.Getenv("API_KEY")
 
 	now := time.Now()
@@ -62,6 +72,8 @@ func GenerateUrl(baseDate ...string) string {
 		"&flowerGubn=" + flowerType +
 		"&dataType=" + DATA_TYPE +
 		"&countPerPage=" + count
+
+	logger.Info("completed")
 
 	return url
 }

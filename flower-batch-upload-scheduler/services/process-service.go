@@ -7,11 +7,15 @@ import (
 	"public-flower-upload-scheduler/models"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 // 공공데이터를 가공하여 새로운 꽃, 꽃품목 데이터를 업로드
 func ProcessFlowerRawData(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (*models.FlowerBatchProcessLogs, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	defer func() {
 		var err error = nil
 		if r := recover(); r != nil {
@@ -32,6 +36,7 @@ func ProcessFlowerRawData(db *gorm.DB, publicFlowers []models.PublicBiddingFlowe
 					Status:              "FAILURE",
 					ErrLogs:             err.Error(),
 				}
+				logger.Error(err.Error())
 				db.Create(log)
 			}
 		}
@@ -63,11 +68,16 @@ func ProcessFlowerRawData(db *gorm.DB, publicFlowers []models.PublicBiddingFlowe
 		return nil, tx.Error
 	}
 
+	logger.Info("completed")
+
 	return &log, nil
 }
 
 // 공공데이터를 기반으로 디비에 없는 새로운 꽃을 추가합니다.(꽃 품목 우선 생성 실행)
 func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (int, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	var newFlowers []models.Flowers = []models.Flowers{}
 	var dbFlowers []models.Flowers
 	var dbFlowerTypes []models.FlowerTypes
@@ -128,12 +138,16 @@ func UploadNewFlowers(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) 
 	}
 
 	log.Printf("New Flowers Length : %d", len(newFlowers))
+	logger.Info("completed")
 	return len(newFlowers), nil
 
 }
 
 // 공공데이터를 기반으로 디비에 없는 새로운 꽃 품목을 추가합니다.
 func UploadNewFlowerTypes(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (int, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	var flowerTypes []models.FlowerTypes
 	var newFlowerTypes []models.FlowerTypes = []models.FlowerTypes{}
 
@@ -174,11 +188,15 @@ func UploadNewFlowerTypes(db *gorm.DB, publicFlowers []models.PublicBiddingFlowe
 	}
 
 	log.Printf("New Flower Types Length : %d", len(newFlowerTypes))
+	logger.Info("completed")
 	return len(newFlowerTypes), nil
 }
 
 // 공공데이터를 기반으로 기존 꽃데이터에 꽃 경매일자를 추가합니다.
 func UploadNewFlowerBiddingDate(db *gorm.DB, publicFlowers []models.PublicBiddingFlowers) (int, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	var dbFlowers []models.Flowers
 	var dbFlowerTypes []models.FlowerTypes
 	flowerTable := db.Table("flowers")
@@ -227,6 +245,7 @@ func UploadNewFlowerBiddingDate(db *gorm.DB, publicFlowers []models.PublicBiddin
 	}
 
 	log.Printf("New BiddingFlowers Length : %d", len(newBiddingFlowers))
+	logger.Info("completed")
 	return len(newBiddingFlowers), nil
 }
 
