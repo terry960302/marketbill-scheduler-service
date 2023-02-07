@@ -9,10 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 func UploadFlowers(db *gorm.DB, rawFlowers []models.FlowerItem) (*[]models.PublicBiddingFlowers, *models.FlowerBatchUploadLogs, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	defer func() {
 		var err error = nil
 		if r := recover(); r != nil {
@@ -32,6 +36,7 @@ func UploadFlowers(db *gorm.DB, rawFlowers []models.FlowerItem) (*[]models.Publi
 					Total:   -1,
 					ErrLogs: err.Error(),
 				}
+				logger.Error(err.Error())
 				db.Create(log)
 			}
 		}
@@ -47,10 +52,14 @@ func UploadFlowers(db *gorm.DB, rawFlowers []models.FlowerItem) (*[]models.Publi
 		return nil, nil, tx.Error
 	}
 
+	logger.Info("completed")
+
 	return publicFlowers, log, nil
 }
 
 func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*[]models.PublicBiddingFlowers, *models.FlowerBatchUploadLogs, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
 
 	var errLogs []string = []string{}
 	var dataList []models.PublicBiddingFlowers = []models.PublicBiddingFlowers{}
@@ -85,6 +94,8 @@ func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*[]models.Pu
 		return nil, nil, tx.Error
 	}
 
+	logger.Info("completed")
+
 	return &dataList, &models.FlowerBatchUploadLogs{
 		Success: batchSize - len(errLogs),
 		Failure: len(errLogs),
@@ -97,7 +108,6 @@ func UploadRawFlowerData(db *gorm.DB, flowers []models.FlowerItem) (*[]models.Pu
 func strToInt(from string, flower models.FlowerItem, errLogs *[]string) int {
 	target, err := strconv.Atoi(from)
 	if err != nil {
-		log.Print(err.Error())
 		msg := err.Error() + " => data:" + fmt.Sprint(flower)
 		*errLogs = append(*errLogs, msg)
 	}

@@ -2,15 +2,18 @@ package datastore
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"public-flower-upload-scheduler/models"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func NewPostgresql() (*gorm.DB, error) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	DSN := "host=" + os.Getenv("DB_HOST") +
 		" user=" + os.Getenv("DB_USER") +
 		" password=" + os.Getenv("DB_PW") +
@@ -22,11 +25,12 @@ func NewPostgresql() (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 		return nil, err
 	}
 
 	db.AutoMigrate(&models.PublicBiddingFlowers{}, &models.FlowerBatchUploadLogs{}, &models.FlowerBatchProcessLogs{})
 
+	logger.Info("completed")
 	return db, nil
 }
